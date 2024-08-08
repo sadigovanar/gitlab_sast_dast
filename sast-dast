@@ -1,0 +1,59 @@
+stages:
+  - build
+  - security_scan
+  - docker_build
+  - docker_push
+  - deploy
+  - dast_scan
+
+variables:
+  MAVEN_CLI_OPTS: "-s .mvn/wrapper/maven-wrapper.properties"
+
+before_script:
+  - echo "Starting pipeline for ${CI_COMMIT_REF_NAME}"
+
+build_maven:
+  stage: build
+  script:
+    - mvn clean install
+  only:
+    - main
+
+snyk_sast_scan:
+  stage: security_scan
+  script:
+    - snyk test --severity-threshold=high
+  only:
+    - main
+  allow_failure: true
+
+build_docker_image:
+  stage: docker_build
+  script:
+    - docker build -t anar02/devops-integration .
+  only:
+    - main
+
+push_docker_image:
+  stage: docker_push
+  script:
+    - echo "${DOCKER_PWD}" | docker login -u anar02 --password-stdin
+    - docker tag anar02/devops-integration anar02/devops-sast-integration1:latest
+    - docker push anar02/devops-sast-integration1:latest
+  only:
+    - main
+
+deploy_to_k8s:
+  stage: deploy
+  script:
+    - kubectl --kubeconfig $KUBECONFIG apply -f deploymentservice.yaml
+  only:
+    - main
+
+dast_burp_scan:
+  stage: dast_scan
+  script:
+    - curl -vgw "\n" -X POST "http://192.168.17.144:8080/api/N938jN8eS6OubnDiJtUXHGx2YpvkoJkD/v0.1/scan" -d '{"scan_configurations":[{"name":"fast","type":"NamedConfiguration"}],"urls":["http://192.168.17.139:31803/"]}'
+  only:
+    - main
+
