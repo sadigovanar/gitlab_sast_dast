@@ -25,7 +25,7 @@ snyk_sast_scan:
     - snyk test --severity-threshold=high
   only:
     - main
-  allow_failure: true
+  allow_failure: false
 
 build_docker_image:
   stage: docker_build
@@ -56,4 +56,5 @@ dast_burp_scan:
     - curl -vgw "\n" -X POST "http://192.168.17.144:8080/api/N938jN8eS6OubnDiJtUXHGx2YpvkoJkD/v0.1/scan" -d '{"scan_configurations":[{"name":"fast","type":"NamedConfiguration"}],"urls":["http://192.168.17.139:31803/"]}'
   only:
     - main
+allow_failure: false
 
